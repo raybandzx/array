@@ -1,0 +1,48 @@
+#include <stdio.h>
+#include <stdbool.h>
+#include <stdlib.h>
+
+#define SIZE 5
+
+bool isValid(const int arr[], int length, int pos) {
+    return pos >= 0 && pos < length;
+}
+
+void remove_element(int arr[], int length, int pos) {
+    if (!isValid(arr, length, pos)) {
+        printf("Invalid position: %d\n", pos);
+        return;
+    }
+
+    for (int i = pos; i < length - 1; i++) {
+        arr[i] = arr[i + 1];
+    }
+}
+
+int main() {
+    int arr[SIZE] = {10, 20, 30, 40, 50}; 
+    int length = 5;
+
+    printf("Original array: ");
+    for (int i = 0; i < length; i++) {
+        printf("%d ", arr[i]);
+    }
+    printf("\n");
+
+    
+    remove_element(arr, &length, 2);
+
+    for (int i = length-1; i > 0; i--) {
+        arr[i] = arr[i - 1];
+    }
+    arr[0] = 10;
+    length++;
+
+    printf("Array after removal: ");
+    for (int i = 0; i < length; i++) {
+        printf("%d ", arr[i]);
+    }
+    printf("\n");
+
+    return 0;
+}
