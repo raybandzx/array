@@ -1,0 +1,243 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <time.h>
+
+#define NUM_TEAMS 8     
+#define SQUAD_SIZE 11  
+#define MAX_NAME 25     
+#define MAX_TEAM_NAME 20   
+#define MIN_KIT_NUM 1  
+#define MAX_KIT_NUM 99    
+
+typedef struct {
+    int day;
+    int month;
+    int year;
+} dob_t;
+
+typedef struct {
+    char name[MAX_NAME]; 
+    int kit_number;           
+    char position[31];     
+    dob_t dob;              
+} player_t;
+
+typedef struct {
+    char name[MAX_TEAM_NAME];
+    player_t players[SQUAD_SIZE]; 
+    int active_size;               
+} team_t;
+
+team_t teams[NUM_TEAMS];
+int num_enrolled_teams = 0;
+int current_year;
+
+void display_menu();
+void enroll_club();
+void add_player();
+void search_update();
+void display_club_statistics();
+void handle_error(const char* message);
+int is_kit_number_unique(const char* club_name, int kit_number);
+int is_name_unique(const char* club_name, const char* player_name);
+float calculate_average_age(player_t* players, int num_players);
+
+int main() {//set current year for age calculation
+    time_t t = time(NULL);//get current time
+    struct tm* current_time = localtime(&t);
+    current_year = current_time->tm_year + 1900;//get current year
+
+    int choice;
+
+    while (1) {
+        display_menu();//display all options
+        if (scanf("%d", &choice) != 1) {
+            handle_error("Invalid input. Please enter a number.");
+            while (getchar() != '\n');
+            continue;
+        }
+        getchar(); 
+
+        switch (choice) {//execute based on choice
+            case 1: enroll_club(); break;
+            case 2: add_player(); break;
+            case 3: search_update(); break;
+            case 4: display_club_statistics(); break;
+            case 5: printf("Exiting program. Goodbye!\n"); return 0;
+            default: handle_error("Invalid choice. Please try again."); break;
+        }
+    }
+}
+
+void display_menu() {//main menu option display
+    printf("\n--- Football League Management ---\n");
+    printf("1. Enroll Club\n");
+    printf("2. Add Player\n");
+    printf("3. Search and Update Player\n");
+    printf("4. Display Club Statistics\n");
+    printf("5. Exit\n");
+    printf("Enter your choice: ");
+}
+
+void handle_error(const char* message) {
+    printf("Error: %s\n", message);
+}
+
+void enroll_club() {
+    if (num_enrolled_teams >= NUM_TEAMS) {
+        handle_error("Maximum number of clubs enrolled.");
+        return;
+    }
+
+    printf("Enter club name (max %d characters): ", MAX_TEAM_NAME);
+    fgets(teams[num_enrolled_teams].name, MAX_TEAM_NAME, stdin);
+    strtok(teams[num_enrolled_teams].name, "\n");
+
+    for (int i = 0; i < num_enrolled_teams; i++) {
+        if (strcasecmp(teams[i].name, teams[num_enrolled_teams].name) == 0) {
+            handle_error("Club already exists.");
+            return;
+        }
+    }
+
+    teams[num_enrolled_teams].active_size = 0;
+    num_enrolled_teams++;
+    printf("Club '%s' successfully enrolled!\n", teams[num_enrolled_teams - 1].name);
+}
+
+int is_kit_number_unique(const char* club_name, int kit_number) {
+    for (int i = 0; i < num_enrolled_teams; i++) {
+        if (strcasecmp(teams[i].name, club_name) == 0) {
+            for (int j = 0; j < teams[i].active_size; j++) {
+                if (teams[i].players[j].kit_number == kit_number) {
+                    return 0;
+                }
+            }
+        }
+    }
+    return 1;
+}
+
+int is_name_unique(const char* club_name, const char* player_name) {
+    for (int i = 0; i < num_enrolled_teams; i++) {
+        if (strcasecmp(teams[i].name, club_name) == 0) {
+            for (int j = 0; j < teams[i].active_size; j++) {
+                if (strcasecmp(teams[i].players[j].name, player_name) == 0) {
+                    return 0;
+                }
+            }
+        }
+    }
+    return 1;
+}
+
+void add_player() {
+    if (num_enrolled_teams == 0) {
+        handle_error("No clubs enrolled yet.");
+        return;
+    }
+
+    printf("Select a club:\n");
+    for (int i = 0; i < num_enrolled_teams; i++) {
+        printf("%d. %s\n", i + 1, teams[i].name);
+    }
+
+    int club_choice;
+    printf("Enter club number: ");
+    if (scanf("%d", &club_choice) != 1 || club_choice < 1 || club_choice > num_enrolled_teams) {
+        handle_error("Invalid club selection.");
+        while (getchar() != '\n'); 
+        return;
+    }
+    getchar();
+
+    team_t* selected_team = &teams[club_choice - 1];
+    if (selected_team->active_size >= SQUAD_SIZE) {
+        handle_error("Club's squad is full.");
+        return;
+    }
+
+    player_t new_player;
+    printf("Enter player name: ");
+    fgets(new_player.name, MAX_NAME, stdin);
+    strtok(new_player.name, "\n");
+
+    if (!is_name_unique(selected_team->name, new_player.name)) {
+        handle_error("Player name already exists in this club.");
+        return;
+    }
+
+    printf("Enter kit number (%d-%d): ", MIN_KIT_NUM, MAX_KIT_NUM);
+    if (scanf("%d", &new_player.kit_number) != 1 || 
+        new_player.kit_number < MIN_KIT_NUM || 
+        new_player.kit_number > MAX_KIT_NUM ||
+        !is_kit_number_unique(selected_team->name, new_player.kit_number)) {
+        handle_error("Invalid or duplicate kit number.");
+        while (getchar() != '\n');  
+        return;
+    }
+    getchar();
+
+    printf("Enter date of birth (DD MM YYYY): ");
+    if (scanf("%d %d %d", &new_player.dob.day, &new_player.dob.month, &new_player.dob.year) != 3) {
+        handle_error("Invalid date format.");
+        while (getchar() != '\n');  
+        return;
+    }
+    getchar();
+
+    printf("Enter position: ");
+    fgets(new_player.position, 31, stdin);
+    strtok(new_player.position, "\n");
+
+    selected_team->players[selected_team->active_size++] = new_player;
+    printf("Player '%s' successfully added to '%s'!\n", new_player.name, selected_team->name);
+}
+
+void search_update() {
+    char search_name[MAX_NAME];
+    printf("Enter player name to search: ");
+    fgets(search_name, MAX_NAME, stdin);
+    strtok(search_name, "\n");
+
+    for (int i = 0; i < num_enrolled_teams; i++) {
+        for (int j = 0; j < teams[i].active_size; j++) {
+            if (strcasecmp(teams[i].players[j].name, search_name) == 0) {
+                printf("Player found in '%s'.\n", teams[i].name);
+                printf("Current Position: %s\n", teams[i].players[j].position);
+                printf("Enter new position: ");
+                fgets(teams[i].players[j].position, 31, stdin);
+                strtok(teams[i].players[j].position, "\n");
+                printf("Player updated successfully.\n");
+                return;
+            }
+        }
+    }
+
+    handle_error("Player not found.");
+}
+
+float calculate_average_age(player_t* players, int num_players) {
+    if (num_players == 0) return 0.0;
+
+    int total_age = 0;
+    for (int i = 0; i < num_players; i++) {
+        total_age += current_year - players[i].dob.year;
+    }
+    return (float)total_age / num_players;
+}
+
+void display_club_statistics() {
+    if (num_enrolled_teams == 0) {
+        handle_error("No clubs enrolled.");
+        return;
+    }
+
+    for (int i = 0; i < num_enrolled_teams; i++) {
+        printf("\n--- %s ---\n", teams[i].name);
+        printf("Number of players: %d\n", teams[i].active_size);
+        printf("Average age: %.2f\n", calculate_average_age(teams[i].players, teams[i].active_size));
+    }
+}
