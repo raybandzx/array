@@ -1,23 +1,42 @@
 #include <stdio.h>
+#define initial_balance 1000
 
-int balance = 1000;
-int tobeprocessed[100];
-int unprocessed_transaction = 0;
+int main() {
 
- for (int i = 0; i < transactions; i++) {
+    int balance = initial_balance;//starting balance
+
+    int transactions[] = {200, -150, -500, -400, -50, -200, 300};//array for transactions
+    int tobeprocessed[sizeof(transactions) / sizeof(transactions[0])];//array for unprocessed transactions
+    int tobeprocessed_num = 0;//counts number of unprocessed transactions
+    int num_of_transactions = sizeof(transactions) / sizeof(transactions[0]);//calculates number of transactions
+
+    for (int i = 0; i < num_of_transactions; i++) {//loops through the transactions
         int transaction = transactions[i];
-
-        if (transaction<0) {
-            printf("Insufficient funds\n");
-        } else {
-            balance += transaction;
-            printf("Withdrawal successful\n");
+        //checks for invalid withdrawals
+        if ((transaction < 0 && transaction + balance < 0) || balance == 0) {
+            tobeprocessed[tobeprocessed_num++] = transaction;//stores transactions
+            if (balance == 0) {//checks for zero balance
+                printf("No further transactions will be processed\n");
+                break; //exit loop
+            } else {
+                printf("Transaction %d failed: Insufficient funds for %d AED withdrawal.\n", i + 1, -transaction);
             }
-        if (balance ==0){
-            printf("No further transactions will be processed.\n");
-            break;
-        } 
- }
-if (tobeprocessed == 0) {
+        } else {//for valid transactions
+            balance += transaction;
+        }
+    }
 
+    printf("Your final balance is %d AED.\n", balance);//prints final balance
+
+    if (tobeprocessed_num > 0) {// for unprocessed transactions
+        printf("Unprocessed transactions:\n");//printing lists of unprocessed transactions
+        for (int i = 0; i < tobeprocessed_num; i++) {
+            printf("%d ", tobeprocessed[i]);
+        }
+        printf("\n");
+    } else {
+        printf("No unprocessed transactions\n");//printed when there are no unprocessed transactions
+    }
+
+    return 0;//end program
 }
